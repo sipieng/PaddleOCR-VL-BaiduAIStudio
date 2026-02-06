@@ -2,6 +2,24 @@
 
 直接使用 [Baidu AI Studio](https://aistudio.baidu.com/paddleocr) 提供的 [Access Token](https://aistudio.baidu.com/account/accessToken) 和 API 接口。
 
+### Web UI（本机自用 / 简体中文）
+
+启动：
+
+```bash
+uv run python -m app
+```
+
+然后打开：`http://127.0.0.1:8000/`
+
+说明：
+
+- Token 只从本地 `.env` 读取，前端页面不会显示/传递 token。
+- 支持：图片、PDF；支持批量；“选择文件夹”在 Chrome/Edge 体验更好（使用 `webkitdirectory`）。
+- 输出会按任务写入 `output/{task_id}/...`，并可在页面上下载 ZIP。
+
+配置：复制 `.env.example` 为 `.env` 并填写。
+
 
 ### 官方同步解析代码示例
 

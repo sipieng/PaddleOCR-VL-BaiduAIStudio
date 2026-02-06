@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PaddleOCR-VL 本地识别工具</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <div class="bg"></div>
+    <header class="top">
+      <div class="brand">
+        <div class="logo">OCR</div>
+        <div>
+          <div class="title">PaddleOCR-VL 本地识别工具</div>
+          <div class="subtitle">上传图片 / PDF，批量识别并导出 Markdown 与图片</div>
+        </div>
+      </div>
+      <div class="actions">
+          <button id="btnDownload" class="btn btn-secondary" disabled>下载本次结果 ZIP</button>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section class="card upload" id="dropZone">
+        <div class="uploadRow">
+          <div class="uploadLeft">
+            <div class="uploadTitle">拖放文件/文件夹到此处</div>
+            <div class="uploadHint">支持：图片（jpg/png/webp…）与 PDF。文件夹上传在 Chrome/Edge 体验更好。</div>
+          </div>
+          <div class="uploadRight">
+            <input id="fileInput" type="file" multiple accept="image/*,application/pdf" hidden />
+            <input id="folderInput" type="file" webkitdirectory multiple hidden />
+            <button id="btnPickFiles" class="btn">选择文件</button>
+            <button id="btnPickFolder" class="btn btn-secondary">选择文件夹</button>
+          </div>
+        </div>
+
+        <div class="opts">
+          <label class="opt"><input id="optOrientation" type="checkbox" /> 方向纠正</label>
+          <label class="opt"><input id="optUnwarp" type="checkbox" /> 去弯曲</label>
+          <label class="opt"><input id="optChart" type="checkbox" /> 图表识别</label>
+          <span class="sep"></span>
+          <label class="opt"><input id="optForceAsync" type="checkbox" /> 强制异步（适合大批量 / PDF）</label>
+          <button id="btnStart" class="btn btn-primary" disabled>开始识别</button>
+          <button id="btnClear" class="btn btn-ghost" disabled>清空队列</button>
+        </div>
+      </section>
+
+      <section class="grid">
+        <div class="card pane">
+          <div class="paneHeader">
+            <div>
+              <div class="paneTitle">文件队列</div>
+              <div id="taskStatus" class="paneMeta">未开始</div>
+            </div>
+            <div class="miniActions">
+              <button id="btnRefresh" class="miniBtn" disabled>刷新</button>
+            </div>
+          </div>
+          <div id="queueList" class="list empty">
+            <div class="emptyState">
+              <div class="emptyTitle">还没有文件</div>
+              <div class="emptyHint">把文件拖进来，或点击“选择文件/选择文件夹”。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card pane">
+          <div class="paneHeader">
+            <div>
+              <div class="paneTitle">结果预览</div>
+              <div id="previewMeta" class="paneMeta">请选择一个已完成的文件</div>
+            </div>
+            <div class="miniActions">
+              <button id="btnCopy" class="miniBtn" disabled>复制 Markdown</button>
+            </div>
+          </div>
+          <div class="preview">
+            <pre id="mdPreview" class="md">（尚无内容）</pre>
+            <div id="tips" class="tips">提示：点击左侧“完成”的文件可预览 Markdown；PDF 默认走异步识别。</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
