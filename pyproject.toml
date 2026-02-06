@@ -1,5 +1,5 @@
 [project]
-name = "paddleocr-vl-1-5-baiduaistudio"
+name = "PaddleOCR-VL-BaiduAIStudio"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"

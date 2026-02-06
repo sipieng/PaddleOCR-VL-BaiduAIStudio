@@ -10,7 +10,6 @@ dotenv.load_dotenv()
 API_URL = os.getenv("BAIDU_PADDLE_OCR_API_URL")
 TOKEN = os.getenv("BAIDU_AI_STUDIO_API_KEY")
 
-file_path = "<local file path>"
 
 def ocr(file_path):
     with open(file_path, "rb") as file:

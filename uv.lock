@@ -62,7 +62,7 @@ wheels = [
 ]
 
 [[package]]
-name = "paddleocr-vl-1-5-baiduaistudio"
+name = "paddleocr-vl-baiduaistudio"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
