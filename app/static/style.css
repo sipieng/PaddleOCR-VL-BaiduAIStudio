@@ -146,80 +146,84 @@ html, body {
   border-top: 1px solid rgba(255, 255, 255, 0.10);
 }
 
-.opt {
-  font-size: 12px;
-  color: var(--muted);
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.optText {
-  color: var(--muted);
-}
-
-.info {
-  position: relative;
-  width: 10px;
-  height: 10px;
-  border-radius: 99px;
-  display: inline-grid;
-  place-items: center;
-  font-size: 8px;
-  line-height: 1;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.20);
-  background: rgba(255, 255, 255, 0.06);
-  cursor: help;
-  transform: translateY(-1px);
-}
-
-.info::after {
-  content: attr(data-tip);
-  position: absolute;
-  left: 50%;
-  bottom: 100%;
-  transform: translate(-50%, -10px);
-  width: min(360px, 70vw);
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(10, 16, 32, 0.92);
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 11px;
-  line-height: 1.4;
-  font-weight: 400;
-  white-space: pre-line;
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
-  opacity: 0;
-  pointer-events: none;
-  z-index: 50;
-}
-
-.info::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: 100%;
-  transform: translate(-50%, -2px);
-  width: 10px;
-  height: 10px;
-  background: rgba(10, 16, 32, 0.92);
-  border-left: 1px solid rgba(255, 255, 255, 0.18);
-  border-top: 1px solid rgba(255, 255, 255, 0.18);
-  rotate: 225deg;
-  opacity: 0;
-  pointer-events: none;
-  z-index: 51;
-}
-
-.info:hover::after,
-.info:focus::after,
-.info:hover::before,
-.info:focus::before {
-  opacity: 1;
-}
+ .opt {
+   font-size: 12px;
+   color: var(--muted);
+   display: flex;
+   gap: 8px;
+   align-items: center;
+   position: relative;
+ }
+ 
+ .optText {
+   color: var(--muted);
+ }
+ 
+ .info {
+   position: relative;
+   width: 10px;
+   height: 10px;
+   border-radius: 99px;
+   display: inline-grid;
+   place-items: center;
+   font-size: 8px;
+   line-height: 1;
+   font-weight: 500;
+   font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+   color: rgba(255, 255, 255, 0.65);
+   border: 1px solid rgba(255, 255, 255, 0.20);
+   background: rgba(255, 255, 255, 0.06);
+   cursor: help;
+ }
+ 
+ .info::after {
+   content: attr(data-tip);
+   position: absolute;
+   left: 100%;
+   bottom: 100%;
+   transform: translate(-10px, -10px);
+   width: min(360px, 70vw);
+   max-width: 70vw;
+   padding: 10px 12px;
+   border-radius: 12px;
+   border: 1px solid rgba(255, 255, 255, 0.18);
+   background: rgba(10, 16, 32, 0.92);
+   color: rgba(255, 255, 255, 0.92);
+   font-size: 11px;
+   line-height: 1.4;
+   font-weight: 400;
+   white-space: pre-line;
+   word-wrap: break-word;
+   overflow-wrap: break-word;
+   box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+   opacity: 0;
+   pointer-events: none;
+   z-index: 50;
+ }
+ 
+ .info::before {
+   content: "";
+   position: absolute;
+   left: 50%;
+   bottom: 100%;
+   transform: translate(-50%, -2px);
+   width: 10px;
+   height: 10px;
+   background: rgba(10, 16, 32, 0.92);
+   border-left: 1px solid rgba(255, 255, 255, 0.18);
+   border-top: 1px solid rgba(255, 255, 255, 0.18);
+   rotate: 225deg;
+   opacity: 0;
+   pointer-events: none;
+   z-index: 51;
+ }
+ 
+ .info:hover::after,
+ .info:focus::after,
+ .info:hover::before,
+ .info:focus::before {
+   opacity: 1;
+ }
 
 .sep {
   width: 1px;
