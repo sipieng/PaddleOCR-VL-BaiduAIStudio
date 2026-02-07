@@ -3,7 +3,7 @@ import json
 import os
 import time
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 import requests
 
@@ -92,6 +92,7 @@ class BaiduPaddleOcrClient:
         job_id: str,
         poll_interval_s: float = 3.0,
         max_wait_s: float = 15 * 60.0,
+        should_cancel: Optional[Callable[[], bool]] = None,
     ) -> dict[str, Any]:
         if not self._job_url:
             raise RuntimeError("Missing BAIDU_PADDLE_OCR_JOB_URL for async mode")
@@ -99,6 +100,8 @@ class BaiduPaddleOcrClient:
         deadline = time.time() + max_wait_s
         last = None
         while time.time() < deadline:
+            if should_cancel and should_cancel():
+                raise RuntimeError("canceled")
             resp = requests.get(
                 f"{self._job_url}/{job_id}", headers=headers, timeout=self._timeout_s
             )
@@ -114,6 +117,8 @@ class BaiduPaddleOcrClient:
                 raise RuntimeError(
                     f"Job failed: {last.get('errorMsg', 'unknown error')}"
                 )
+            if should_cancel and should_cancel():
+                raise RuntimeError("canceled")
             time.sleep(poll_interval_s)
         raise RuntimeError(f"Job timeout after {max_wait_s}s; last={last}")
 

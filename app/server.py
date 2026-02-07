@@ -82,11 +82,25 @@ async def create_task(
     )
     task = queue.create_task()
     task_dir = ensure_dir(Path(settings.output_root) / task.task_id)
-    upload_dir = ensure_dir(task_dir / "_uploads")
+    inputs_dir = ensure_dir(task_dir / "inputs")
 
     total_bytes = 0
     created_items = []
     for idx, f in enumerate(files):
+        # Server-side format validation (frontend also filters).
+        name_raw = f.filename or "file"
+        name_lower = name_raw.lower()
+        ct = (f.content_type or "").lower()
+        is_pdf = ct == "application/pdf" or name_lower.endswith(".pdf")
+        is_img = ct.startswith("image/") or name_lower.endswith(
+            (".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff")
+        )
+        if not (is_pdf or is_img):
+            raise HTTPException(
+                status_code=400,
+                detail=f"不支持的文件格式：{name_raw}（仅支持图片与 PDF）",
+            )
+
         data = await f.read()
         size = len(data)
         total_bytes += size
@@ -95,21 +109,48 @@ async def create_task(
         if total_bytes > settings.max_total_bytes:
             raise HTTPException(status_code=413, detail="上传总大小超限")
 
-        filename = safe_path_segment(f.filename or "file")
-        rp = rel_list[idx] if idx < len(rel_list) else filename
-        rp_parts = split_relpath(rp)
-        rp_safe = (
-            "/".join([safe_path_segment(p) for p in rp_parts]) if rp_parts else filename
-        )
+        original_name = f.filename or "file"
+        filename = safe_path_segment(original_name)
 
-        tmp_path = upload_dir / f"{idx:05d}_{filename}"
-        tmp_path.write_bytes(data)
+        rp = rel_list[idx] if idx < len(rel_list) else original_name
+        display_parts = split_relpath(rp)
+        display_relpath = "/".join(display_parts) if display_parts else original_name
+
+        # Write uploaded file directly into task inputs/{relpath} (sanitized for filesystem).
+        rel_safe_parts = [safe_path_segment(p) for p in display_parts]
+        if not rel_safe_parts:
+            rel_safe_parts = [filename]
+        dest_path = inputs_dir.joinpath(*rel_safe_parts)
+        ensure_dir(dest_path.parent)
+        if dest_path.exists():
+            stem = dest_path.stem
+            suffix = dest_path.suffix
+            k = 1
+            while True:
+                cand = dest_path.with_name(f"{stem}_{k}{suffix}")
+                if not cand.exists():
+                    dest_path = cand
+                    # Keep UI display name aligned with the stored file.
+                    last = display_parts[-1] if display_parts else original_name
+                    if "." in last:
+                        base, ext = last.rsplit(".", 1)
+                        last2 = f"{base}_{k}.{ext}"
+                    else:
+                        last2 = f"{last}_{k}"
+                    if display_parts:
+                        display_parts[-1] = last2
+                        display_relpath = "/".join(display_parts)
+                    else:
+                        display_relpath = last2
+                    break
+                k += 1
+        dest_path.write_bytes(data)
 
         item = queue.enqueue_file(
             task_id=task.task_id,
-            local_path=str(tmp_path),
+            local_path=str(dest_path),
             filename=filename,
-            relpath=rp_safe,
+            relpath=display_relpath,
             size=size,
             force_async=force_async,
             options=opt,
@@ -137,7 +178,22 @@ def get_task(task_id: str) -> dict[str, Any]:
         "total": task.total,
         "done": task.done,
         "failed": task.failed,
+        "canceled": getattr(task, "canceled", 0),
         "message": task.message,
+    }
+
+
+@app.post("/api/tasks/{task_id}/cancel")
+def cancel_task(task_id: str) -> dict[str, Any]:
+    task = queue.get_task(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="任务不存在")
+    queue.cancel_task(task_id)
+    task2 = queue.get_task(task_id)
+    return {
+        "taskId": task_id,
+        "status": task2.status if task2 else "canceled",
+        "message": task2.message if task2 else "已停止",
     }
 
 

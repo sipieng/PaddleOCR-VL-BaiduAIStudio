@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>PaddleOCR-VL 本地识别工具</title>
+    <title>PaddleOCR-VL 1.5 Web UI</title>
     <link rel="stylesheet" href="/static/style.css" />
   </head>
   <body>
@@ -12,12 +12,9 @@
       <div class="brand">
         <div class="logo">OCR</div>
         <div>
-          <div class="title">PaddleOCR-VL 本地识别工具</div>
-          <div class="subtitle">上传图片 / PDF，批量识别并导出 Markdown 与图片</div>
+          <div class="title">PaddleOCR-VL 1.5 Web UI</div>
+          <div class="subtitle">上传图片 / PDF，批量识别并导出 Markdown 格式</div>
         </div>
-      </div>
-      <div class="actions">
-          <button id="btnDownload" class="btn btn-secondary" disabled>下载本次结果 ZIP</button>
       </div>
     </header>
 
@@ -37,13 +34,60 @@
         </div>
 
         <div class="opts">
-          <label class="opt"><input id="optOrientation" type="checkbox" /> 方向纠正</label>
-          <label class="opt"><input id="optUnwarp" type="checkbox" /> 去弯曲</label>
-          <label class="opt"><input id="optChart" type="checkbox" /> 图表识别</label>
+          <label class="opt">
+            <input id="optOrientation" type="checkbox" />
+            <span class="optText">方向纠正</span>
+            <span
+              class="info"
+              tabindex="0"
+              data-tip="用于检测并纠正文档方向不正（如 90°/180°旋转）。
+建议在：拍照角度导致文字方向不对、横竖颠倒时开启。
+注意：对本来方向正确的图片可能无明显收益，少数情况下可能误判方向。"
+              aria-label="方向纠正 说明"
+              >i</span
+            >
+          </label>
+          <label class="opt">
+            <input id="optUnwarp" type="checkbox" />
+            <span class="optText">去弯曲</span>
+            <span
+              class="info"
+              tabindex="0"
+              data-tip="用于纸张弯曲、透视变形、拍照书页等场景的几何矫正。
+建议在：手机拍纸质文件、书页有卷曲/拱起、透视明显时开启。
+注意：对扫描件/截图通常收益不大，是否提升取决于服务端处理效果。"
+              aria-label="去弯曲 说明"
+              >i</span
+            >
+          </label>
+          <label class="opt">
+            <input id="optChart" type="checkbox" />
+            <span class="optText">图表识别</span>
+            <span
+              class="info"
+              tabindex="0"
+              data-tip="更偏向统计图/图形图表（柱状图、折线图、饼图等）的信息抽取。
+如果你关心的是“表格（table）”结构化输出，这个开关不一定有帮助。
+注意：是否对结果有影响，以百度服务端实际实现为准；建议对同一文件做勾选/不勾选对比。"
+              aria-label="图表识别 说明"
+              >i</span
+            >
+          </label>
           <span class="sep"></span>
-          <label class="opt"><input id="optForceAsync" type="checkbox" /> 强制异步（适合大批量 / PDF）</label>
+          <label class="opt">
+            <input id="optForceAsync" type="checkbox" />
+            <span class="optText">强制异步（适合大批量 / PDF）</span>
+            <span
+              class="info"
+              tabindex="0"
+              data-tip="仅影响调用方式：强制走异步 jobs（更适合 PDF/大文件/批量，通常更稳，且可轮询进度）。
+它不代表识别质量一定更好，只是更不容易因为请求超时而失败。"
+              aria-label="强制异步 说明"
+              >i</span
+            >
+          </label>
           <button id="btnStart" class="btn btn-primary" disabled>开始识别</button>
-          <button id="btnClear" class="btn btn-ghost" disabled>清空队列</button>
+          <button id="btnStop" class="btn btn-ghost" disabled>停止识别</button>
         </div>
       </section>
 
@@ -56,6 +100,7 @@
             </div>
             <div class="miniActions">
               <button id="btnRefresh" class="miniBtn" disabled>刷新</button>
+              <button id="btnClear" class="miniBtn" disabled>清空</button>
             </div>
           </div>
           <div id="queueList" class="list empty">
@@ -74,6 +119,7 @@
             </div>
             <div class="miniActions">
               <button id="btnCopy" class="miniBtn" disabled>复制 Markdown</button>
+              <button id="btnDownload" class="miniBtn" disabled>下载 ZIP</button>
             </div>
           </div>
           <div class="preview">

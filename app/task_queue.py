@@ -17,7 +17,7 @@ class TaskItem:
     filename: str
     relpath: str
     size: int
-    status: str = "queued"  # queued|running|done|failed
+    status: str = "queued"  # queued|running|done|failed|canceled
     error: str = ""
     output_dir: str = ""
     md_files: list[str] = field(default_factory=list)
@@ -32,6 +32,7 @@ class Task:
     total: int = 0
     done: int = 0
     failed: int = 0
+    canceled: int = 0
     message: str = ""
     items: list[TaskItem] = field(default_factory=list)
 
@@ -75,6 +76,20 @@ class TaskQueue:
     def get_task(self, task_id: str) -> Optional[Task]:
         with self._lock:
             return self._tasks.get(task_id)
+
+    def cancel_task(self, task_id: str) -> None:
+        with self._lock:
+            task = self._tasks.get(task_id)
+            if not task:
+                return
+            if task.status in ("done", "failed", "canceled"):
+                return
+            task.status = "canceled"
+            task.message = "已停止识别"
+            for it in task.items:
+                if it.status == "queued":
+                    it.status = "canceled"
+                    task.canceled += 1
 
     def enqueue_file(
         self,
@@ -139,6 +154,12 @@ class TaskQueue:
                         item.status = "done"
                         item.md_files = md_files
                         item.assets = assets
+            except TaskCanceled:
+                with self._lock:
+                    # cancel_task() counts queued->canceled; running item gets counted here.
+                    if item and item.status != "canceled":
+                        item.status = "canceled"
+                        task.canceled += 1
             except Exception as e:  # noqa: BLE001
                 with self._lock:
                     task.failed += 1
@@ -148,30 +169,24 @@ class TaskQueue:
             finally:
                 with self._lock:
                     if (
-                        task.done + task.failed >= task.total
+                        task.done + task.failed + task.canceled >= task.total
                         and task.status != "canceled"
                     ):
                         task.status = "done" if task.failed == 0 else "failed"
                 self._q.task_done()
 
     def _process_one(self, job: EnqueuedItem) -> tuple[list[str], list[str]]:
-        task_dir = ensure_dir(self._output_root / job.task_id)
-        inputs_dir = ensure_dir(task_dir / "inputs")
-        rel_parts = [
-            safe_path_segment(p) for p in job.relpath.replace("\\", "/").split("/") if p
-        ]
-        if rel_parts:
-            dest_path = inputs_dir.joinpath(*rel_parts)
-        else:
-            dest_path = inputs_dir / safe_path_segment(job.filename)
-        ensure_dir(dest_path.parent)
+        task = self.get_task(job.task_id)
+        if not task or task.status == "canceled":
+            raise TaskCanceled()
 
-        # Ensure input file exists in task folder
+        task_dir = ensure_dir(self._output_root / job.task_id)
+        # Input file is already written to output/{task_id}/inputs/... by server.
         src = Path(job.local_path)
         if not src.exists():
             raise RuntimeError(f"Input file missing: {src}")
-        if dest_path.resolve() != src.resolve():
-            dest_path.write_bytes(src.read_bytes())
+
+        dest_path = src
 
         file_type = guess_file_type(job.filename)
         use_async = job.force_async or file_type == 0
@@ -181,7 +196,20 @@ class TaskQueue:
             job_id = self._client.submit_job(
                 file_path=str(dest_path), options=job.options
             )
-            job_data = self._client.poll_job(job_id=job_id)
+            try:
+                job_data = self._client.poll_job(
+                    job_id=job_id,
+                    should_cancel=lambda: (
+                        self.get_task(job.task_id) or Task("", 0)
+                    ).status
+                    == "canceled",
+                )
+            except RuntimeError as e:
+                if str(e) == "canceled":
+                    raise TaskCanceled() from e
+                raise
+            if (self.get_task(job.task_id) or Task("", 0)).status == "canceled":
+                raise TaskCanceled()
             json_url = (job_data.get("resultUrl") or {}).get("jsonUrl")
             if not json_url:
                 raise RuntimeError("Job completed but missing resultUrl.jsonUrl")
@@ -193,13 +221,23 @@ class TaskQueue:
             pages = parse_jsonl_results(jsonl_text)
             # Merge pages into a single materialization dir; keep page order.
             for page_idx, page_result in enumerate(pages):
+                if (self.get_task(job.task_id) or Task("", 0)).status == "canceled":
+                    raise TaskCanceled()
                 out_dir = ensure_dir(
                     task_dir / safe_path_segment(job.item_id) / f"page_{page_idx}"
                 )
                 m = materialize_result_to_dir(page_result, out_dir)
                 md_files.extend(m.md_files)
                 assets.extend(m.assets)
+
+            merged_md = self._write_merged_markdown(
+                task_dir / safe_path_segment(job.item_id), md_files
+            )
+            if merged_md:
+                md_files = [merged_md, *md_files]
         else:
+            if (self.get_task(job.task_id) or Task("", 0)).status == "canceled":
+                raise TaskCanceled()
             file_bytes = dest_path.read_bytes()
             result = self._client.submit_sync_base64(
                 file_bytes=file_bytes, file_type=file_type, options=job.options
@@ -210,3 +248,27 @@ class TaskQueue:
             assets.extend(m.assets)
 
         return md_files, assets
+
+    def _write_merged_markdown(self, item_dir: Path, md_files: list[str]) -> str:
+        # For multi-page PDFs, we materialize per-page md under item_dir/page_*/doc_*.md.
+        # Create a merged markdown for convenience.
+        if len(md_files) <= 1:
+            return ""
+        parts: list[str] = []
+        for p in md_files:
+            try:
+                text = Path(p).read_text(encoding="utf-8")
+            except Exception:
+                text = ""
+            text = text.strip("\n")
+            parts.append(text)
+        merged_text = "\n\n---\n\n".join([x for x in parts if x])
+        if not merged_text.strip():
+            return ""
+        out = ensure_dir(item_dir) / "merged.md"
+        out.write_text(merged_text + "\n", encoding="utf-8")
+        return str(out)
+
+
+class TaskCanceled(Exception):
+    pass
