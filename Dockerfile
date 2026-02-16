@@ -27,7 +27,11 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 # 创建非 root 用户（安全最佳实践）
 RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
-USER appuser
+
+# 安装 gosu（用于以非 root 用户运行应用）
+RUN apt-get update && \
+    apt-get install -y gosu && \
+    rm -rf /var/lib/apt/lists/*
 
 # 暴露端口（仅作为文档）
 EXPOSE 22438

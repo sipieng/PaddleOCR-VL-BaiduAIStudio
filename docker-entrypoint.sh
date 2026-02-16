@@ -7,7 +7,22 @@ set -e
 HOST="${HOST:-0.0.0.0}"
 PORT="${PORT:-22438}"
 
+# 修复 output 目录权限（以 root 用户运行）
+if [ -d "/app/output" ]; then
+    echo "Fixing permissions for /app/output..."
+    chown -R appuser:appuser /app/output
+    chmod -R 755 /app/output
+fi
+
+# 创建 output 目录（如果不存在）
+if [ ! -d "/app/output" ]; then
+    echo "Creating /app/output directory..."
+    mkdir -p /app/output
+    chown -R appuser:appuser /app/output
+    chmod 755 /app/output
+fi
+
 echo "Starting PaddleOCR-VL on ${HOST}:${PORT}"
 
-# 使用 uvicorn 启动应用
-exec uv run uvicorn app.server:app --host "$HOST" --port "$PORT"
+# 使用 gosu 以非 root 用户启动应用
+exec gosu appuser uv run uvicorn app.server:app --host "$HOST" --port "$PORT"
