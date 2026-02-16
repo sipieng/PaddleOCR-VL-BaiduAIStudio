@@ -3,15 +3,53 @@
 * 后台直接使用 [Baidu AI Studio](https://aistudio.baidu.com/paddleocr) 提供的 [Access Token](https://aistudio.baidu.com/account/accessToken) 和 API 接口。
 * 支持：图片、PDF；支持批量 OCR。
 * 输出会按任务写入 `output/{task_id}/...`，也可在页面上下载 ZIP。
+* 支持 Docker 部署到 VPS。
 * **本工具使用 AI 生成。**
 
-### 使用说明
+### 本地开发
 
 1. 克隆到本地，然后运行 `uv sync` 安装依赖。
-2. 从 [Baidu AI Studio](https://aistudio.baidu.com/paddleocr) 获取自己的 API KEY 和 API URL，填到 `.env` 文件中。
+2. 从 [百度 AI Studio](https://aistudio.baidu.com/paddleocr) 获取自己的 API KEY 和 API URL，填到 `.env` 文件中。
 3. PowerShell 进入项目文件夹，运行 `uv run python -m app`。Windows 环境也可直接运行 `run.bat`。
 
+### Docker 部署
+
+项目支持使用 Docker 部署到 VPS，详细部署指南请参考 [DOCKER.md](DOCKER.md)。
+
+**快速开始：**
+
+```bash
+# 1. 安装 Docker 和 Docker Compose
+curl -fsSL https://get.docker.com | sh
+
+# 2. 克隆项目
+git clone <your-repo-url>
+cd PaddleOCR-VL-BaiduAIStudio
+
+# 3. 配置 .env 文件（填写 API Key 等信息）
+cp .env.example .env
+# 编辑 .env 文件，填写 BAIDU_AI_STUDIO_API_KEY 等必需配置
+
+# 4. 构建并启动
+docker compose build
+docker compose up -d
+
+# 5. 访问 http://your-vps-ip:22438
+```
+
 ### 更新日志
+
+#### 2026-02-16
+
+* 新增 Docker 部署支持：
+  - 添加 `Dockerfile`、`docker-compose.yml`、`.dockerignore`
+  - 使用 `docker-entrypoint.sh` 支持环境变量配置
+  - 默认端口改为 22438（可配置）
+  - 支持通过 `.env` 文件配置所有运行参数
+
+* 优化环境变量处理：
+  - 修复 `__main__.py` 环境变量加载顺序问题
+  - 本地开发和 Docker 部署共享 `.env` 配置
 
 #### 2026-02-07
 

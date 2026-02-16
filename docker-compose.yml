@@ -1,0 +1,51 @@
+services:
+  paddleocr-vl:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: paddleocr-vl
+    restart: unless-stopped
+
+    # 端口映射：外部端口和容器端口都从环境变量读取，默认 22438
+    ports:
+      - "${HOST_PORT:-22438}:${CONTAINER_PORT:-22438}"
+
+    # 环境变量
+    environment:
+      # ⚠️ 必填：从 .env 文件读取（如果未设置会报错）
+      - BAIDU_AI_STUDIO_API_KEY=${BAIDU_AI_STUDIO_API_KEY:?BAIDU_AI_STUDIO_API_KEY is required}
+      - BAIDU_PADDLE_OCR_API_URL=${BAIDU_PADDLE_OCR_API_URL:?BAIDU_PADDLE_OCR_API_URL is required}
+      - BAIDU_PADDLE_OCR_JOB_URL=${BAIDU_PADDLE_OCR_JOB_URL:?BAIDU_PADDLE_OCR_JOB_URL is required}
+
+      # 可选配置（带默认值，可从 .env 覆盖）
+      - HOST=0.0.0.0
+      - PORT=${CONTAINER_PORT:-22438}
+      - OUTPUT_ROOT=/app/output
+      - DEFAULT_CONCURRENCY=${DEFAULT_CONCURRENCY:-2}
+      - MAX_FILE_BYTES=${MAX_FILE_BYTES:-26214400}
+      - MAX_TOTAL_BYTES=${MAX_TOTAL_BYTES:-262144000}
+
+    # 持久化存储
+    volumes:
+      - output-data:/app/output
+
+    # 资源限制（从环境变量读取，带默认值）
+    deploy:
+      resources:
+        limits:
+          cpus: '${CPUS_LIMIT:-2}'
+          memory: ${MEMORY_LIMIT:-2G}
+        reservations:
+          cpus: '${CPUS_RESERVATION:-0.5}'
+          memory: ${MEMORY_RESERVATION:-512M}
+
+    # 日志配置（从环境变量读取，带默认值）
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "${LOG_MAX_SIZE:-10m}"
+        max-file: "${LOG_MAX_FILE:-3}"
+
+volumes:
+  output-data:
+    driver: local
