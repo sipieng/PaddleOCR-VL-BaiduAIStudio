@@ -23,7 +23,7 @@
 curl -fsSL https://get.docker.com | sh
 
 # 2. 克隆项目
-git clone <your-repo-url>
+git clone git@github.com:sipieng/PaddleOCR-VL-BaiduAIStudio.git
 cd PaddleOCR-VL-BaiduAIStudio
 
 # 3. 配置 .env 文件（填写 API Key 等信息）
@@ -34,7 +34,7 @@ cp .env.example .env
 docker compose build
 docker compose up -d
 
-# 5. 访问 http://your-vps-ip:22438
+# 5. 访问 http://your-vps-ip:<PORT>
 ```
 
 ### 更新日志
@@ -44,7 +44,7 @@ docker compose up -d
 * 新增 Docker 部署支持：
   - 添加 `Dockerfile`、`docker-compose.yml`、`.dockerignore`
   - 使用 `docker-entrypoint.sh` 支持环境变量配置
-  - 默认端口改为 22438（可配置）
+  - 支持通过 `.env` 文件修改默认端口
   - 支持通过 `.env` 文件配置所有运行参数
 
 * 优化环境变量处理：
