@@ -6,6 +6,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: paddleocr-vl
+    pull_policy: build
+    image: paddleocr-vl
     restart: unless-stopped
 
     # 端口映射：外部端口和容器端口都从环境变量读取，默认 22438
